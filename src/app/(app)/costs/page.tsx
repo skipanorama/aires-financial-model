@@ -149,7 +149,7 @@ export default function CostsPage() {
                                     return { ...prev, rentTiers: newTiers }
                                   })
                                 }}
-                                className="input-compact"
+                                className="input-compact-wide"
                               />
                             </td>
                             <td>
@@ -167,7 +167,7 @@ export default function CostsPage() {
                                       return { ...prev, rentTiers: newTiers }
                                     })
                                   }}
-                                  className="input-compact"
+                                  className="input-compact-wide"
                                 />
                               )}
                             </td>
