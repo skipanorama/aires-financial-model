@@ -105,6 +105,27 @@ export default function CostsPage() {
           {/* Fixed Costs */}
           {activeSection === 'fixed' && (
             <div className="space-y-6 animate-fade-in">
+              {/* Base Rent */}
+              <div>
+                <h3 className="section-title mb-4">
+                  <DollarSign className="w-4 h-4 text-amber-600" />
+                  Base Rent
+                </h3>
+                <div className="max-w-sm">
+                  <NumberInput
+                    label="Annual Base Rent"
+                    value={inputs.costs.baseRent}
+                    onChange={(v) => updateCosts(prev => ({ ...prev, baseRent: v }))}
+                    min={0}
+                    step={5000}
+                    prefix="$"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Minimum annual rent due regardless of revenue. The actual rent charged is the greater of this base rent or the calculated tiered rent.
+                  </p>
+                </div>
+              </div>
+
               {/* Tiered Rent */}
               <div>
                 <div className="flex items-center justify-between mb-4">

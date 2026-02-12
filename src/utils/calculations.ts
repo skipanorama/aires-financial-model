@@ -210,7 +210,9 @@ export const calculateDailyCosts = (
   // Fixed costs (distributed daily)
   // Calculate annual revenue from weekly revenue for tiered rent calculation
   const annualRevenue = totalWeeklyRevenue * 52
-  const annualRent = calculateTieredRent(annualRevenue, costs.rentTiers)
+  const tieredRent = calculateTieredRent(annualRevenue, costs.rentTiers)
+  // Base rent is the minimum annual rent; actual rent is the greater of base rent or tiered rent
+  const annualRent = Math.max(tieredRent, costs.baseRent ?? 0)
   const dailyRent = annualRent / 52 / 7 // Divide annual rent by weeks and days
   const dailyManagement = (costs.annualManagementSalary / 52) / 7
   const dailyOverhead = costs.weeklyOverhead / 7

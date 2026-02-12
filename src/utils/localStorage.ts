@@ -34,7 +34,9 @@ export const getDefaultInputs = (): SpaInputs => ({
     revenuePercentage: 12 // 12% of treatment + thermal revenue
   },
   costs: {
-    // Fixed Costs - Tiered Rent based on annual revenue
+    // Fixed Costs - Base Rent (minimum annual rent)
+    baseRent: 275000, // $275,000 annual minimum rent
+    // Tiered Rent based on annual revenue
     rentTiers: [
       { minRevenue: 0, maxRevenue: 1800000, percentage: 5 },
       { minRevenue: 1800000, maxRevenue: 2500000, percentage: 6 },
