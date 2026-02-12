@@ -202,7 +202,8 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
   const annualRevenue = calculations.revenue.totals.total * 52
   const annualCosts = calculations.costs.totals.total * 52
   const annualProfit = calculations.profit.weekly.profit * 52
-  const annualRent = calculateTieredRent(annualRevenue, inputs.costs.rentTiers)
+  const tieredRent = calculateTieredRent(annualRevenue, inputs.costs.rentTiers)
+  const annualRent = Math.max(tieredRent, inputs.costs.baseRent ?? 0)
   const effectiveRentRate = (annualRent / annualRevenue) * 100
 
   // Sheet 1: Executive Summary
