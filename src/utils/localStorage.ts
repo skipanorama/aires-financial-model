@@ -142,18 +142,22 @@ export const exportDataAsJSON = (inputs: SpaInputs): void => {
   }
 }
 
-// Import data from JSON file
+// Import data from JSON file - supports both raw SpaInputs and Scenario wrapper formats
 export const importDataFromJSON = (file: File): Promise<SpaInputs> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string)
-        // Validate the imported data structure
+        // Try raw SpaInputs format first: { treatment, thermal, retail, costs }
         if (validateInputStructure(data)) {
-          // Merge with defaults to fill in any missing fields from older versions
           resolve(mergeWithDefaults(data))
-        } else {
+        }
+        // Try scenario wrapper format: { id, name, inputs: { treatment, thermal, ... } }
+        else if (data.inputs && validateInputStructure(data.inputs)) {
+          resolve(mergeWithDefaults(data.inputs))
+        }
+        else {
           reject(new Error('Invalid data structure'))
         }
       } catch (error) {
