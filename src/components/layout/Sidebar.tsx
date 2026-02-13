@@ -50,7 +50,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="text-white font-bold text-base leading-tight truncate">
-                Aires
+                Aeris
               </span>
               <span className="text-blue-200 text-[10px] leading-tight truncate">
                 Financial Model

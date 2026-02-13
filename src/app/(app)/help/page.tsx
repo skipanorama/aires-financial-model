@@ -76,7 +76,7 @@ export default function HelpPage() {
       content: (
         <div className="space-y-4">
           <p className="text-gray-700 leading-relaxed">
-            The Aires Financial Model is a comprehensive spa financial simulation tool that helps you model revenue, 
+            The Aeris Financial Model is a comprehensive spa financial simulation tool that helps you model revenue,
             costs, and profitability for spa operations. It provides real-time calculations as you adjust inputs.
           </p>
           <div className="bg-blue-50 rounded-xl p-4">
@@ -328,7 +328,7 @@ export default function HelpPage() {
       {/* Header */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Help & Documentation</h2>
-        <p className="text-sm text-gray-500 mt-1">Learn how to use the Aires Financial Model effectively</p>
+        <p className="text-sm text-gray-500 mt-1">Learn how to use the Aeris Financial Model effectively</p>
       </div>
 
       {/* Guide Navigation + Content */}

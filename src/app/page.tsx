@@ -67,7 +67,7 @@ export default function LandingPage() {
             <Waves className="w-6 h-6 text-white" />
           </div>
           <div>
-            <span className="text-white font-bold text-xl">Aires</span>
+            <span className="text-white font-bold text-xl">Aeris</span>
             <span className="text-blue-200 text-sm ml-1">Financial Model</span>
           </div>
         </div>
@@ -193,10 +193,10 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Waves className="w-5 h-5 text-blue-300" />
-            <span className="text-blue-200 text-sm">Aires Financial Model</span>
+            <span className="text-blue-200 text-sm">Aeris Financial Model</span>
           </div>
           <p className="text-blue-400 text-xs">
-            © {new Date().getFullYear()} Aires. Spa & Wellness Financial Simulation.
+            © {new Date().getFullYear()} Aeris. Spa & Wellness Financial Simulation.
           </p>
         </div>
       </footer>

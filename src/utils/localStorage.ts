@@ -134,7 +134,7 @@ export const exportDataAsJSON = (inputs: SpaInputs): void => {
     const url = URL.createObjectURL(dataBlob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'aires-financial-model-data.json'
+    link.download = 'aeris-financial-model-data.json'
     link.click()
     URL.revokeObjectURL(url)
   } catch (error) {

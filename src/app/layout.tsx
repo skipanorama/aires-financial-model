@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Aires Financial Model',
+  title: 'Aeris Financial Model',
   description: 'Professional spa & wellness financial simulation and analysis tool',
 }
 

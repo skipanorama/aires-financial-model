@@ -1,10 +1,10 @@
-# Aires Financial Model
+# Aeris Financial Model
 
 A comprehensive spa financial simulation tool built with Next.js 14, featuring a modern corporate blue theme, sidebar navigation, tabbed interfaces, and real-time financial calculations.
 
 ## Overview
 
-Aires Financial Model is a complete UI/UX redesign of the original spa-financial-model. It preserves **identical business logic and calculations** while providing a vastly improved user experience with:
+Aeris Financial Model is a complete UI/UX redesign of the original spa-financial-model. It preserves **identical business logic and calculations** while providing a vastly improved user experience with:
 
 - **Modern corporate design** with blue theme (#1E40AF primary)
 - **Multi-page layout** with collapsible sidebar navigation

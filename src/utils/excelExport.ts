@@ -191,7 +191,7 @@ export const exportRevenueToExcel = (calculations: FinancialCalculations, inputs
   XLSX.utils.book_append_sheet(wb, retailConfigWS, 'Retail Config')
 
   // Download the file
-  XLSX.writeFile(wb, `Aires_Revenue_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
+  XLSX.writeFile(wb, `Aeris_Revenue_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
 export const exportFinancialToExcel = (calculations: FinancialCalculations, inputs: SpaInputs) => {
@@ -454,5 +454,5 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
   XLSX.utils.book_append_sheet(wb, utilizationWS, 'Utilization & Pricing')
 
   // Download the file
-  XLSX.writeFile(wb, `Aires_Financial_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
+  XLSX.writeFile(wb, `Aeris_Financial_Report_${new Date().toISOString().split('T')[0]}.xlsx`)
 }

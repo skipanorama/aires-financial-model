@@ -320,7 +320,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">About</h3>
-              <p className="text-sm text-gray-500">Aires Financial Model</p>
+              <p className="text-sm text-gray-500">Aeris Financial Model</p>
             </div>
           </div>
 

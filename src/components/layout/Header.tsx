@@ -21,7 +21,7 @@ interface HeaderProps {
 export function Header({ onMobileMenuToggle }: HeaderProps) {
   const pathname = usePathname()
   
-  const title = pageTitles[pathname || ''] || 'Aires Financial Model'
+  const title = pageTitles[pathname || ''] || 'Aeris Financial Model'
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
@@ -63,7 +63,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           </div>
           <div className="hidden sm:block">
             <p className="text-sm font-medium text-gray-700">Admin</p>
-            <p className="text-xs text-gray-400">aires@model.io</p>
+            <p className="text-xs text-gray-400">aeris@model.io</p>
           </div>
         </div>
       </div>

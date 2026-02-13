@@ -152,7 +152,7 @@ export default function ReportsPage() {
       <div ref={printRef} className="space-y-4 print-report">
         {/* Report Header (print only) */}
         <div className="hidden print:block text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Aires Financial Model</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Aeris Financial Model</h1>
           <p className="text-gray-500">Comprehensive Financial Report</p>
           <p className="text-sm text-gray-400 mt-1">Generated: {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
