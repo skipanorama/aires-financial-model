@@ -3,6 +3,24 @@ import { SpaInputs, Scenario } from './types'
 const STORAGE_KEY = 'aires-financial-model-inputs'
 const SCENARIOS_KEY = 'aires-financial-model-scenarios'
 
+// Deep merge imported data with defaults to fill in any missing fields
+// This ensures backward compatibility when importing data from older versions
+const mergeWithDefaults = (imported: any): SpaInputs => {
+  const defaults = getDefaultInputs()
+  return {
+    treatment: { ...defaults.treatment, ...imported.treatment },
+    thermal: { ...defaults.thermal, ...imported.thermal },
+    retail: { ...defaults.retail, ...imported.retail },
+    costs: {
+      ...defaults.costs,
+      ...imported.costs,
+      attendants: { ...defaults.costs.attendants, ...(imported.costs?.attendants || {}) },
+      receptionists: { ...defaults.costs.receptionists, ...(imported.costs?.receptionists || {}) },
+      supervisors: { ...defaults.costs.supervisors, ...(imported.costs?.supervisors || {}) },
+    },
+  }
+}
+
 // Default values for testing and initial setup
 export const getDefaultInputs = (): SpaInputs => ({
   treatment: {
@@ -90,7 +108,9 @@ export const loadFromLocalStorage = (): SpaInputs | null => {
     if (serialized === null) {
       return null
     }
-    return JSON.parse(serialized)
+    const data = JSON.parse(serialized)
+    // Merge with defaults to fill in any missing fields from older versions
+    return mergeWithDefaults(data)
   } catch (error) {
     console.error('Failed to load from localStorage:', error)
     return null
@@ -131,7 +151,8 @@ export const importDataFromJSON = (file: File): Promise<SpaInputs> => {
         const data = JSON.parse(event.target?.result as string)
         // Validate the imported data structure
         if (validateInputStructure(data)) {
-          resolve(data as SpaInputs)
+          // Merge with defaults to fill in any missing fields from older versions
+          resolve(mergeWithDefaults(data))
         } else {
           reject(new Error('Invalid data structure'))
         }
@@ -314,9 +335,12 @@ export const importScenarioFromJSON = (file: File): Promise<Scenario> => {
         
         // Validate the scenario structure
         if (validateScenarioStructure(data)) {
+          // Merge inputs with defaults to fill in any missing fields from older versions
+          const mergedInputs = mergeWithDefaults(data.inputs)
           // Generate new ID to avoid conflicts
           const importedScenario: Scenario = {
             ...data,
+            inputs: mergedInputs,
             id: generateScenarioId(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
