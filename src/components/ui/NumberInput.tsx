@@ -57,9 +57,9 @@ export function NumberInput({
   return (
     <div className={`input-group ${className}`}>
       {label && <label>{label}</label>}
-      <div className="relative">
+      <div className="flex items-center gap-2">
         {prefix && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+          <span className="text-sm font-medium text-gray-500 whitespace-nowrap">
             {prefix}
           </span>
         )}
@@ -70,10 +70,10 @@ export function NumberInput({
           min={min}
           max={max}
           step={step}
-          className={`${prefix ? 'pl-7' : ''} ${suffix ? 'pr-12' : ''}`}
+          className="flex-1 min-w-0"
         />
         {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+          <span className="text-sm font-medium text-gray-500 whitespace-nowrap">
             {suffix}
           </span>
         )}
