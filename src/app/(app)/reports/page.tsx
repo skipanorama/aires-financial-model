@@ -54,7 +54,7 @@ export default function ReportsPage() {
   const annualCosts = calculations.costs.totals.total * 52
   const annualProfit = calculations.profit.weekly.profit * 52
   const tieredRent = calculateTieredRent(annualRevenue, inputs.costs.rentTiers)
-  const annualRent = Math.max(tieredRent, inputs.costs.baseRent ?? 0)
+  const annualRent = Math.max(tieredRent, inputs.costs.baseRent ?? 0) + (inputs.costs.additionalRent ?? 0)
   const effectiveRentRate = annualRevenue > 0 ? (annualRent / annualRevenue) * 100 : 0
 
   const toggleSection = (section: string) => {
@@ -565,14 +565,22 @@ export default function ReportsPage() {
           onToggle={() => toggleSection('rent')}
           accentColor="amber"
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-gray-50 rounded-lg p-3">
               <div className="text-xs text-gray-500">Annual Revenue</div>
               <div className="font-semibold text-gray-900">{formatCurrency(annualRevenue)}</div>
             </div>
             <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500">Annual Rent</div>
-              <div className="font-semibold text-gray-900">{formatCurrency(annualRent)}</div>
+              <div className="text-xs text-gray-500">Base Rent (Annual)</div>
+              <div className="font-semibold text-gray-900">{formatCurrency(inputs.costs.baseRent)}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="text-xs text-gray-500">Additional Rent (Annual)</div>
+              <div className="font-semibold text-gray-900">{formatCurrency(inputs.costs.additionalRent ?? 0)}</div>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-3">
+              <div className="text-xs text-amber-600">Total Annual Rent</div>
+              <div className="font-semibold text-amber-900">{formatCurrency(annualRent)}</div>
             </div>
             <div className="bg-gray-50 rounded-lg p-3">
               <div className="text-xs text-gray-500">Weekly Rent</div>
@@ -664,8 +672,10 @@ export default function ReportsPage() {
                 <DollarSign className="w-4 h-4 text-red-600" /> Costs
               </h4>
               <div className="space-y-1.5 text-sm">
+                <ConfigRow label="Base Rent" value={`${formatCurrency(inputs.costs.baseRent)}/yr`} />
+                <ConfigRow label="Additional Rent" value={`${formatCurrency(inputs.costs.additionalRent ?? 0)}/yr`} />
                 <ConfigRow label="Mgmt Salary" value={`${formatCurrency(inputs.costs.annualManagementSalary)}/yr`} />
-                <ConfigRow label="Weekly Overhead" value={formatCurrency(inputs.costs.weeklyOverhead)} />
+                <ConfigRow label="Weekly Overhead" value={`${formatCurrency(inputs.costs.weeklyOverhead)}/wk`} />
                 <ConfigRow label="Back Bar Cost" value={`${formatCurrency(inputs.costs.backBarCostPerTreatment)}/tx`} />
                 <ConfigRow label="Amenity Cost" value={`${formatCurrency(inputs.costs.amenityCostPerGuest)}/guest`} />
                 <ConfigRow label="Treatment Labor" value={`${formatCurrency(inputs.costs.treatmentLaborCost)}/tx`} />

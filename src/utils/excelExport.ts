@@ -203,7 +203,7 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
   const annualCosts = calculations.costs.totals.total * 52
   const annualProfit = calculations.profit.weekly.profit * 52
   const tieredRent = calculateTieredRent(annualRevenue, inputs.costs.rentTiers)
-  const annualRent = Math.max(tieredRent, inputs.costs.baseRent ?? 0)
+  const annualRent = Math.max(tieredRent, inputs.costs.baseRent ?? 0) + (inputs.costs.additionalRent ?? 0)
   const effectiveRentRate = (annualRent / annualRevenue) * 100
 
   // Sheet 1: Executive Summary
@@ -290,7 +290,10 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
     ['                         RENT SUMMARY                                       '],
     ['───────────────────────────────────────────────────────────────────────────'],
     ['Annual Revenue', annualRevenue],
-    ['Annual Rent (Calculated)', annualRent],
+    ['Base Rent (Annual Min)', inputs.costs.baseRent],
+    ['Additional Rent (Annual)', inputs.costs.additionalRent ?? 0],
+    ['Tiered Rent (Calculated)', tieredRent],
+    ['Annual Rent (Total)', annualRent],
     ['Weekly Rent', calculations.costs.breakdown.rent],
     ['Effective Rent Rate', `${effectiveRentRate.toFixed(2)}%`],
     [''],
@@ -386,6 +389,8 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
     ['───────────────────────────────────────────────────────────────────────────'],
     [''],
     ['Fixed Costs:'],
+    ['  Base Rent', inputs.costs.baseRent, '/year (minimum)'],
+    ['  Additional Rent', inputs.costs.additionalRent ?? 0, '/year (utilities, ops, etc.)'],
     ['  Management Salary', inputs.costs.annualManagementSalary, '/year'],
     ['  Weekly Overhead', inputs.costs.weeklyOverhead, '/week'],
     [''],

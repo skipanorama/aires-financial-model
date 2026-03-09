@@ -43,6 +43,7 @@ export interface RentTier {
 export interface CostInputs {
   // Fixed Costs
   baseRent: number // minimum annual rent regardless of revenue
+  additionalRent: number // additional annual rent (utilities, ops costs, etc.)
   rentTiers: RentTier[] // tiered rent percentages based on annual revenue
   annualManagementSalary: number // annual salary
   weeklyOverhead: number // weekly overhead costs

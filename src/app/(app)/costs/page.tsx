@@ -58,8 +58,9 @@ export default function CostsPage() {
             <Building2 className="w-5 h-5 text-amber-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Fixed Costs</p>
+            <p className="text-xs text-gray-500">Fixed Costs (Weekly)</p>
             <p className="text-lg font-bold text-gray-900">{formatted.costBreakdown.fixed}</p>
+            <p className="text-xs text-gray-400">${(calculations.costs.totals.fixed * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
           </div>
         </div>
         <div className="card p-4 flex items-center gap-3">
@@ -67,8 +68,9 @@ export default function CostsPage() {
             <TrendingUp className="w-5 h-5 text-red-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Variable Costs</p>
+            <p className="text-xs text-gray-500">Variable Costs (Weekly)</p>
             <p className="text-lg font-bold text-gray-900">{formatted.costBreakdown.variable}</p>
+            <p className="text-xs text-gray-400">${(calculations.costs.totals.variable * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
           </div>
         </div>
         <div className="card p-4 flex items-center gap-3">
@@ -76,8 +78,9 @@ export default function CostsPage() {
             <Users2 className="w-5 h-5 text-green-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Labor Costs</p>
+            <p className="text-xs text-gray-500">Labor Costs (Weekly)</p>
             <p className="text-lg font-bold text-gray-900">{formatted.costBreakdown.labor}</p>
+            <p className="text-xs text-gray-400">${(calculations.costs.totals.labor * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
           </div>
         </div>
       </div>
@@ -105,24 +108,39 @@ export default function CostsPage() {
           {/* Fixed Costs */}
           {activeSection === 'fixed' && (
             <div className="space-y-6 animate-fade-in">
-              {/* Base Rent */}
+              {/* Base Rent & Additional Rent */}
               <div>
                 <h3 className="section-title mb-4">
                   <DollarSign className="w-4 h-4 text-amber-600" />
-                  Base Rent
+                  Rent Configuration
                 </h3>
-                <div className="max-w-sm">
-                  <NumberInput
-                    label="Annual Base Rent"
-                    value={inputs.costs.baseRent}
-                    onChange={(v) => updateCosts(prev => ({ ...prev, baseRent: v }))}
-                    min={0}
-                    step={5000}
-                    prefix="$"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Minimum annual rent due regardless of revenue. The actual rent charged is the greater of this base rent or the calculated tiered rent.
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg">
+                  <div>
+                    <NumberInput
+                      label="Annual Base Rent"
+                      value={inputs.costs.baseRent}
+                      onChange={(v) => updateCosts(prev => ({ ...prev, baseRent: v }))}
+                      min={0}
+                      step={5000}
+                      prefix="$"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Minimum annual rent due regardless of revenue. Actual rent is the greater of this or the tiered rent.
+                    </p>
+                  </div>
+                  <div>
+                    <NumberInput
+                      label="Annual Additional Rent"
+                      value={inputs.costs.additionalRent}
+                      onChange={(v) => updateCosts(prev => ({ ...prev, additionalRent: v }))}
+                      min={0}
+                      step={1000}
+                      prefix="$"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Additional annual charges (utilities, ops costs, CAM, etc.) added on top of base/tiered rent.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -227,15 +245,29 @@ export default function CostsPage() {
                   </table>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-4 max-w-md">
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
                   <div className="bg-amber-50 rounded-lg p-3">
                     <p className="text-xs text-amber-500">Weekly Rent</p>
                     <p className="text-lg font-bold text-amber-700">{formatted.detailedCosts.rent}</p>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-3">
+                    <p className="text-xs text-amber-500">Annual Rent (Total)</p>
+                    <p className="text-lg font-bold text-amber-700">
+                      ${(calculations.costs.breakdown.rent * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-xs text-gray-500">Annual Revenue</p>
                     <p className="text-lg font-bold text-gray-700">
                       ${(calculations.revenue.totals.total * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs text-gray-500">Effective Rent Rate</p>
+                    <p className="text-lg font-bold text-gray-700">
+                      {calculations.revenue.totals.total > 0
+                        ? ((calculations.costs.breakdown.rent / calculations.revenue.totals.total) * 100).toFixed(2)
+                        : '0.00'}%
                     </p>
                   </div>
                 </div>
@@ -311,10 +343,10 @@ export default function CostsPage() {
                   <div className="text-sm text-blue-700">
                     <p className="font-medium mb-1">Variable Cost Breakdown</p>
                     <div className="grid grid-cols-2 gap-2 text-xs text-blue-600">
-                      <p>Back Bar: {formatted.detailedCosts.backBar}/week</p>
-                      <p>Amenities: {formatted.detailedCosts.amenities}/week</p>
-                      <p>Treatment Labor: {formatted.detailedCosts.treatmentLabor}/week</p>
-                      <p>Retail COGS: {formatted.detailedCosts.retailCOGS}/week</p>
+                      <p>Back Bar: {formatted.detailedCosts.backBar}/wk <span className="text-blue-400">(${(calculations.costs.breakdown.backBar * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)</span></p>
+                      <p>Amenities: {formatted.detailedCosts.amenities}/wk <span className="text-blue-400">(${(calculations.costs.breakdown.amenities * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)</span></p>
+                      <p>Treatment Labor: {formatted.detailedCosts.treatmentLabor}/wk <span className="text-blue-400">(${(calculations.costs.breakdown.treatmentLabor * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)</span></p>
+                      <p>Retail COGS: {formatted.detailedCosts.retailCOGS}/wk <span className="text-blue-400">(${(calculations.costs.breakdown.retailCOGS * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)</span></p>
                     </div>
                   </div>
                 </div>
@@ -377,7 +409,7 @@ export default function CostsPage() {
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-2">Weekly: {formatted.detailedCosts.attendantLabor}</p>
+                <p className="text-xs text-gray-400 mt-2">Weekly: {formatted.detailedCosts.attendantLabor} <span className="text-gray-300">(${(calculations.costs.breakdown.attendantLabor * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)</span></p>
               </div>
 
               {/* Receptionists */}
@@ -429,7 +461,7 @@ export default function CostsPage() {
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-2">Weekly: {formatted.detailedCosts.receptionistLabor}</p>
+                <p className="text-xs text-gray-400 mt-2">Weekly: {formatted.detailedCosts.receptionistLabor} <span className="text-gray-300">(${(calculations.costs.breakdown.receptionistLabor * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)</span></p>
               </div>
 
               {/* Supervisors */}
@@ -481,7 +513,7 @@ export default function CostsPage() {
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-2">Weekly: {formatted.detailedCosts.supervisorLabor}</p>
+                <p className="text-xs text-gray-400 mt-2">Weekly: {formatted.detailedCosts.supervisorLabor} <span className="text-gray-300">(${(calculations.costs.breakdown.supervisorLabor * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr)</span></p>
               </div>
             </div>
           )}

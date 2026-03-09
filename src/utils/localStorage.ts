@@ -54,6 +54,7 @@ export const getDefaultInputs = (): SpaInputs => ({
   costs: {
     // Fixed Costs - Base Rent (minimum annual rent)
     baseRent: 275000, // $275,000 annual minimum rent
+    additionalRent: 0, // Additional annual rent (utilities, ops costs, etc.)
     // Tiered Rent based on annual revenue
     rentTiers: [
       { minRevenue: 0, maxRevenue: 1800000, percentage: 5 },

@@ -38,8 +38,9 @@ export default function RevenuePage() {
             <Sparkles className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Treatment Revenue</p>
+            <p className="text-xs text-gray-500">Treatment Revenue (Weekly)</p>
             <p className="text-lg font-bold text-gray-900">{formatted.revenueBreakdown.treatment}</p>
+            <p className="text-xs text-gray-400">${(calculations.revenue.totals.treatment * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
           </div>
         </div>
         <div className="card p-4 flex items-center gap-3">
@@ -47,8 +48,9 @@ export default function RevenuePage() {
             <Thermometer className="w-5 h-5 text-cyan-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Thermal Revenue</p>
+            <p className="text-xs text-gray-500">Thermal Revenue (Weekly)</p>
             <p className="text-lg font-bold text-gray-900">{formatted.revenueBreakdown.thermal}</p>
+            <p className="text-xs text-gray-400">${(calculations.revenue.totals.thermal * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
           </div>
         </div>
         <div className="card p-4 flex items-center gap-3">
@@ -56,8 +58,9 @@ export default function RevenuePage() {
             <ShoppingBag className="w-5 h-5 text-purple-600" />
           </div>
           <div>
-            <p className="text-xs text-gray-500">Retail Revenue</p>
+            <p className="text-xs text-gray-500">Retail Revenue (Weekly)</p>
             <p className="text-lg font-bold text-gray-900">{formatted.revenueBreakdown.retail}</p>
+            <p className="text-xs text-gray-400">${(calculations.revenue.totals.retail * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
           </div>
         </div>
       </div>
@@ -545,16 +548,25 @@ export default function RevenuePage() {
                   suffix="%"
                 />
 
-                <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="mt-6 grid grid-cols-3 gap-4">
                   <div className="bg-purple-50 rounded-lg p-4">
                     <p className="text-xs text-purple-500 mb-1">Weekly Retail Revenue</p>
                     <p className="text-xl font-bold text-purple-700">{formatted.revenueBreakdown.retail}</p>
+                    <p className="text-xs text-purple-400 mt-1">${(calculations.revenue.totals.retail * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 mb-1">Base Revenue</p>
+                    <p className="text-xs text-gray-500 mb-1">Base Revenue (Weekly)</p>
                     <p className="text-lg font-bold text-gray-700">
                       ${(calculations.revenue.totals.treatment + calculations.revenue.totals.thermal).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </p>
+                    <p className="text-xs text-gray-400 mt-1">${((calculations.revenue.totals.treatment + calculations.revenue.totals.thermal) * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <p className="text-xs text-green-500 mb-1">Total Revenue (Weekly)</p>
+                    <p className="text-lg font-bold text-green-700">
+                      ${calculations.revenue.totals.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </p>
+                    <p className="text-xs text-green-400 mt-1">${(calculations.revenue.totals.total * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</p>
                   </div>
                 </div>
 
