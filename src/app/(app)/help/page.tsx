@@ -44,7 +44,19 @@ export default function HelpPage() {
     },
     {
       question: 'What is tiered rent and how is it calculated?',
-      answer: 'Tiered rent uses a progressive calculation similar to income tax brackets. Each tier applies its percentage only to the revenue that falls within that tier range. For example, if Tier 1 is 8% on revenue up to $1M and Tier 2 is 10% on revenue from $1M to $2M, then $1.5M in revenue would pay 8% on the first $1M plus 10% on the remaining $500K.'
+      answer: 'Tiered rent uses a progressive calculation similar to income tax brackets. Each tier applies its percentage only to the revenue that falls within that tier range. For example, if Tier 1 is 5% on revenue up to $1.8M and Tier 2 is 6% on revenue from $1.8M to $2.5M, then $2M in revenue would pay 5% on the first $1.8M plus 6% on the remaining $200K. The total rent is the greater of the calculated tiered rent or the base rent, plus any additional rent.'
+    },
+    {
+      question: 'What is the "greater of" rent logic?',
+      answer: 'The rent formula is: Total Rent = MAX(Tiered Rent, Base Rent) + Additional Rent. The base rent is a minimum annual floor — if the tiered rent calculation comes out lower, the base rent applies instead. Additional Rent is always added on top and represents fixed charges like utilities, CAM fees, or operational costs that are separate from the revenue-based rent.'
+    },
+    {
+      question: 'What is Additional Rent?',
+      answer: 'Additional Rent is an annual dollar amount added on top of the base/tiered rent. It covers extra lease charges such as utilities, common area maintenance (CAM), property taxes, insurance, or other operational costs passed through by the landlord. Unlike base rent, it is not subject to the "greater of" comparison — it always applies.'
+    },
+    {
+      question: 'Why do I see annual equivalents on the pages?',
+      answer: 'All weekly revenue and cost figures now display an annual equivalent (×52 weeks) in smaller print below or adjacent to the weekly amount. This helps you quickly assess the full-year impact of any weekly figure without manual calculation, making it easier to compare against annual lease terms, salaries, and budgets.'
     },
     {
       question: 'How is retail revenue calculated?',
@@ -173,13 +185,16 @@ export default function HelpPage() {
 
           <div className="space-y-3">
             <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Fixed Costs</h4>
-              <ul className="text-sm text-gray-600 space-y-1.5">
-                <li><strong>Tiered Rent:</strong> Progressive rent based on annual revenue brackets (add/remove tiers as needed)</li>
-                <li><strong>Management Salary:</strong> Annual salary divided by 52 weeks</li>
-                <li><strong>Overhead:</strong> Weekly fixed overhead costs (utilities, insurance, etc.)</li>
-              </ul>
-            </div>
+             <h4 className="font-semibold text-gray-900 mb-2">Fixed Costs</h4>
+             <ul className="text-sm text-gray-600 space-y-1.5">
+               <li><strong>Base Rent:</strong> Minimum annual rent floor, regardless of revenue</li>
+               <li><strong>Tiered Rent:</strong> Progressive rent based on annual revenue brackets (add/remove tiers as needed)</li>
+               <li><strong>Additional Rent:</strong> Annual charges added on top of base/tiered rent (utilities, CAM, ops costs, etc.)</li>
+               <li><strong>Rent Formula:</strong> Total Rent = MAX(Tiered Rent, Base Rent) + Additional Rent</li>
+               <li><strong>Management Salary:</strong> Annual salary divided by 52 weeks</li>
+               <li><strong>Overhead:</strong> Weekly fixed overhead costs (insurance, POS, etc.)</li>
+             </ul>
+           </div>
 
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-semibold text-gray-900 mb-2">Variable Costs</h4>
@@ -306,9 +321,14 @@ export default function HelpPage() {
               example="81 x 0.80 x (0.50 x $160 + 0.50 x $160) = $10,368"
             />
             <FormulaCard
-              title="Tiered Rent"
+              title="Total Rent"
+              formula="MAX(tieredRent, baseRent) + additionalRent"
+              example="MAX($150K tiered, $275K base) + $50K additional = $325K/yr"
+            />
+            <FormulaCard
+              title="Tiered Rent (Progressive)"
               formula="Sum of: min(revenueInTier, tierRange) x tierPercentage for each tier"
-              example="Progressive: 8% on first $1M + 10% on next $1M + 12% on remainder"
+              example="5% on first $1.8M + 6% on next $700K + 7% on remainder"
             />
             <FormulaCard
               title="Profit Margin"
