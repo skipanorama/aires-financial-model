@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useFinancialContext } from '@/context/FinancialContext'
 import { useFormattedCalculations } from '@/utils/useFinancialCalculations'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { DAYS_SHORT } from '@/utils/localStorage'
-import { RentTier } from '@/utils/types'
+import { RentTier, RentConfig } from '@/utils/types'
+import { calculateFullRent, calculateEscalatedAmount } from '@/utils/calculations'
 import {
   Building2,
   TrendingUp,
@@ -13,7 +14,10 @@ import {
   Plus,
   Trash2,
   DollarSign,
-  Info
+  Info,
+  Calendar,
+  ArrowUpDown,
+  CheckCircle2
 } from 'lucide-react'
 
 type Section = 'fixed' | 'variable' | 'labor'
@@ -23,29 +27,59 @@ export default function CostsPage() {
   const formatted = useFormattedCalculations(calculations)
   const [activeSection, setActiveSection] = useState<Section>('fixed')
 
+  const rentConfig = inputs.costs.rentConfig
+  const annualRevenue = calculations.revenue.totals.total * 52
+
+  const rentCalc = useMemo(() =>
+    calculateFullRent(annualRevenue, rentConfig),
+    [annualRevenue, rentConfig]
+  )
+
   const sections = [
     { id: 'fixed' as Section, label: 'Fixed Costs', icon: Building2, color: 'text-amber-600 bg-amber-50' },
     { id: 'variable' as Section, label: 'Variable Costs', icon: TrendingUp, color: 'text-red-600 bg-red-50' },
     { id: 'labor' as Section, label: 'Labor Costs', icon: Users2, color: 'text-green-600 bg-green-50' },
   ]
 
+  const updateRentConfig = (updates: Partial<RentConfig>) => {
+    updateCosts(prev => ({
+      ...prev,
+      rentConfig: { ...prev.rentConfig, ...updates }
+    }))
+  }
+
+  const updateRentTier = (index: number, field: keyof RentTier, value: number | null) => {
+    updateCosts(prev => {
+      const newTiers = [...prev.rentConfig.percentageRentTiers]
+      newTiers[index] = { ...newTiers[index], [field]: value }
+      return { ...prev, rentConfig: { ...prev.rentConfig, percentageRentTiers: newTiers } }
+    })
+  }
+
   const addRentTier = () => {
     updateCosts(prev => {
-      const lastTier = prev.rentTiers[prev.rentTiers.length - 1]
+      const tiers = prev.rentConfig.percentageRentTiers
+      const lastTier = tiers[tiers.length - 1]
       const newTier: RentTier = {
         minRevenue: lastTier?.maxRevenue ?? 0,
         maxRevenue: null,
         percentage: (lastTier?.percentage ?? 5) + 1
       }
-      return { ...prev, rentTiers: [...prev.rentTiers, newTier] }
+      return {
+        ...prev,
+        rentConfig: { ...prev.rentConfig, percentageRentTiers: [...tiers, newTier] }
+      }
     })
   }
 
   const removeRentTier = (index: number) => {
-    if (inputs.costs.rentTiers.length <= 1) return
+    if (rentConfig.percentageRentTiers.length <= 1) return
     updateCosts(prev => ({
       ...prev,
-      rentTiers: prev.rentTiers.filter((_, i) => i !== index)
+      rentConfig: {
+        ...prev.rentConfig,
+        percentageRentTiers: prev.rentConfig.percentageRentTiers.filter((_, i) => i !== index)
+      }
     }))
   }
 
@@ -108,48 +142,127 @@ export default function CostsPage() {
           {/* Fixed Costs */}
           {activeSection === 'fixed' && (
             <div className="space-y-6 animate-fade-in">
-              {/* Base Rent & Additional Rent */}
+              {/* Lease Year */}
+              <div>
+                <h3 className="section-title mb-4">
+                  <Calendar className="w-4 h-4 text-amber-600" />
+                  Lease Year
+                </h3>
+                <div className="max-w-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">Current Lease Year</span>
+                    <span className="text-lg font-bold text-amber-700">Year {rentConfig.currentLeaseYear}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={25}
+                    value={rentConfig.currentLeaseYear}
+                    onChange={(e) => updateRentConfig({ currentLeaseYear: parseInt(e.target.value) })}
+                    className="w-full accent-amber-600"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>Year 1</span>
+                    <span>Year {rentConfig.cpiStartYear} (CPI starts)</span>
+                    <span>Year 25</span>
+                  </div>
+                  {rentConfig.currentLeaseYear >= rentConfig.cpiStartYear && (
+                    <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" />
+                      CPI escalation active — {rentConfig.currentLeaseYear - rentConfig.cpiStartYear + 1} year(s) of {rentConfig.cpiRate}% compound growth applied
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Base Rent & Additional Rent with CPI */}
               <div>
                 <h3 className="section-title mb-4">
                   <DollarSign className="w-4 h-4 text-amber-600" />
-                  Rent Configuration
+                  Fixed Rent (Base + Additional)
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
                   <div>
                     <NumberInput
                       label="Annual Base Rent"
-                      value={inputs.costs.baseRent}
-                      onChange={(v) => updateCosts(prev => ({ ...prev, baseRent: v }))}
+                      value={rentConfig.baseRentAnnual}
+                      onChange={(v) => updateRentConfig({ baseRentAnnual: v })}
                       min={0}
                       step={5000}
                       prefix="$"
                     />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Minimum annual rent due regardless of revenue. Actual rent is the greater of this or the tiered rent.
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Base annual rent before CPI escalation</p>
                   </div>
                   <div>
                     <NumberInput
                       label="Annual Additional Rent"
-                      value={inputs.costs.additionalRent}
-                      onChange={(v) => updateCosts(prev => ({ ...prev, additionalRent: v }))}
+                      value={rentConfig.additionalRentAnnual}
+                      onChange={(v) => updateRentConfig({ additionalRentAnnual: v })}
                       min={0}
                       step={1000}
                       prefix="$"
                     />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Additional annual charges (utilities, ops costs, CAM, etc.) added on top of base/tiered rent.
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Utilities, CAM, ops costs, etc.</p>
+                  </div>
+                  <div>
+                    <NumberInput
+                      label="CPI Escalation Rate"
+                      value={rentConfig.cpiRate}
+                      onChange={(v) => updateRentConfig({ cpiRate: v })}
+                      min={0}
+                      max={10}
+                      step={0.25}
+                      suffix="%"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Annual compound escalation rate</p>
+                  </div>
+                  <div>
+                    <NumberInput
+                      label="CPI Start Year"
+                      value={rentConfig.cpiStartYear}
+                      onChange={(v) => updateRentConfig({ cpiStartYear: v })}
+                      min={1}
+                      max={25}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Lease year when CPI escalation begins</p>
+                  </div>
+                </div>
+
+                {/* Escalation Preview */}
+                <div className="mt-4 bg-amber-50 border border-amber-100 rounded-lg p-4 max-w-2xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm font-semibold text-amber-800">CPI Escalation Preview (Year {rentConfig.currentLeaseYear})</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-amber-600">Base Rent (Escalated)</p>
+                      <p className="font-bold text-amber-900">
+                        ${rentCalc.baseRentEscalated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-amber-600">Additional Rent (Escalated)</p>
+                      <p className="font-bold text-amber-900">
+                        ${rentCalc.additionalRentEscalated.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-amber-600">Total Fixed Rent</p>
+                      <p className="font-bold text-amber-900">
+                        ${rentCalc.fixedRentTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Tiered Rent */}
+              {/* Percentage Rent Tiers */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="section-title">
                     <Building2 className="w-4 h-4 text-amber-600" />
-                    Progressive Tiered Rent
+                    Percentage Rent Tiers
                   </h3>
                   <button onClick={addRentTier} className="btn-secondary btn-sm">
                     <Plus className="w-3 h-3" /> Add Tier
@@ -169,8 +282,7 @@ export default function CostsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {inputs.costs.rentTiers.map((tier, index) => {
-                        const annualRevenue = calculations.revenue.totals.total * 52
+                      {rentConfig.percentageRentTiers.map((tier, index) => {
                         const isActive = annualRevenue >= tier.minRevenue &&
                           (tier.maxRevenue === null || annualRevenue <= tier.maxRevenue)
                         return (
@@ -180,14 +292,7 @@ export default function CostsPage() {
                               <input
                                 type="number"
                                 value={tier.minRevenue}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value) || 0
-                                  updateCosts(prev => {
-                                    const newTiers = [...prev.rentTiers]
-                                    newTiers[index] = { ...newTiers[index], minRevenue: val }
-                                    return { ...prev, rentTiers: newTiers }
-                                  })
-                                }}
+                                onChange={(e) => updateRentTier(index, 'minRevenue', parseInt(e.target.value) || 0)}
                                 className="input-compact-wide"
                               />
                             </td>
@@ -198,14 +303,7 @@ export default function CostsPage() {
                                 <input
                                   type="number"
                                   value={tier.maxRevenue}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value) || 0
-                                    updateCosts(prev => {
-                                      const newTiers = [...prev.rentTiers]
-                                      newTiers[index] = { ...newTiers[index], maxRevenue: val || null }
-                                      return { ...prev, rentTiers: newTiers }
-                                    })
-                                  }}
+                                  onChange={(e) => updateRentTier(index, 'maxRevenue', parseInt(e.target.value) || null)}
                                   className="input-compact-wide"
                                 />
                               )}
@@ -214,14 +312,7 @@ export default function CostsPage() {
                               <input
                                 type="number"
                                 value={tier.percentage}
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0
-                                  updateCosts(prev => {
-                                    const newTiers = [...prev.rentTiers]
-                                    newTiers[index] = { ...newTiers[index], percentage: val }
-                                    return { ...prev, rentTiers: newTiers }
-                                  })
-                                }}
+                                onChange={(e) => updateRentTier(index, 'percentage', parseFloat(e.target.value) || 0)}
                                 className="input-compact"
                                 step={0.5}
                               />
@@ -233,7 +324,7 @@ export default function CostsPage() {
                               <button
                                 onClick={() => removeRentTier(index)}
                                 className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                disabled={inputs.costs.rentTiers.length <= 1}
+                                disabled={rentConfig.percentageRentTiers.length <= 1}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -245,29 +336,53 @@ export default function CostsPage() {
                   </table>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl">
-                  <div className="bg-amber-50 rounded-lg p-3">
-                    <p className="text-xs text-amber-500">Weekly Rent</p>
-                    <p className="text-lg font-bold text-amber-700">{formatted.detailedCosts.rent}</p>
-                  </div>
-                  <div className="bg-amber-50 rounded-lg p-3">
-                    <p className="text-xs text-amber-500">Annual Rent (Total)</p>
-                    <p className="text-lg font-bold text-amber-700">
-                      ${(calculations.costs.breakdown.rent * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                <div className="mt-3 bg-gray-50 rounded-lg p-3 max-w-md">
+                  <p className="text-xs text-gray-500">Total Percentage Rent</p>
+                  <p className="text-lg font-bold text-gray-800">
+                    ${rentCalc.percentageRentTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Rent Determination */}
+              <div>
+                <h3 className="section-title mb-4">
+                  <ArrowUpDown className="w-4 h-4 text-amber-600" />
+                  Rent Determination (Greater Of)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
+                  <div className={`rounded-lg p-4 border-2 ${rentCalc.rentType === 'fixed' ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-gray-600">Fixed Rent</p>
+                      {rentCalc.rentType === 'fixed' && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+                    </div>
+                    <p className="text-xl font-bold text-gray-900">
+                      ${rentCalc.fixedRentTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </p>
+                    <p className="text-xs text-gray-500">(Base + Additional w/ CPI)</p>
+                    {rentCalc.rentType === 'fixed' && <p className="text-xs text-green-600 font-semibold mt-1">✓ APPLIES</p>}
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500">Annual Revenue</p>
-                    <p className="text-lg font-bold text-gray-700">
-                      ${(calculations.revenue.totals.total * 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  <div className={`rounded-lg p-4 border-2 ${rentCalc.rentType === 'percentage' ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-gray-600">Percentage Rent</p>
+                      {rentCalc.rentType === 'percentage' && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+                    </div>
+                    <p className="text-xl font-bold text-gray-900">
+                      ${rentCalc.percentageRentTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </p>
+                    <p className="text-xs text-gray-500">(Progressive tiered)</p>
+                    {rentCalc.rentType === 'percentage' && <p className="text-xs text-green-600 font-semibold mt-1">✓ APPLIES</p>}
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs text-gray-500">Effective Rent Rate</p>
-                    <p className="text-lg font-bold text-gray-700">
-                      {calculations.revenue.totals.total > 0
-                        ? ((calculations.costs.breakdown.rent / calculations.revenue.totals.total) * 100).toFixed(2)
-                        : '0.00'}%
+                  <div className="rounded-lg p-4 border-2 border-amber-400 bg-amber-50">
+                    <p className="text-xs font-medium text-amber-700 mb-1">Effective Annual Rent</p>
+                    <p className="text-xl font-bold text-amber-900">
+                      ${rentCalc.effectiveRentAnnual.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </p>
+                    <p className="text-xs text-amber-600">
+                      ${(rentCalc.effectiveRentAnnual / 52).toLocaleString(undefined, { maximumFractionDigits: 0 })}/week
+                    </p>
+                    <p className="text-xs text-amber-600">
+                      {annualRevenue > 0 ? ((rentCalc.effectiveRentAnnual / annualRevenue) * 100).toFixed(2) : '0.00'}% of revenue
                     </p>
                   </div>
                 </div>

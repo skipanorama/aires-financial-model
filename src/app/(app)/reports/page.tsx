@@ -5,7 +5,7 @@ import { useFinancialContext } from '@/context/FinancialContext'
 import { useFormattedCalculations } from '@/utils/useFinancialCalculations'
 import { exportRevenueToExcel, exportFinancialToExcel } from '@/utils/excelExport'
 import { formatCurrency, formatPercentage, DAYS_OF_WEEK } from '@/utils/localStorage'
-import { calculateTieredRent } from '@/utils/calculations'
+import { calculateFullRent } from '@/utils/calculations'
 import {
   FileSpreadsheet,
   Printer,
@@ -53,8 +53,8 @@ export default function ReportsPage() {
   const annualRevenue = calculations.revenue.totals.total * 52
   const annualCosts = calculations.costs.totals.total * 52
   const annualProfit = calculations.profit.weekly.profit * 52
-  const tieredRent = calculateTieredRent(annualRevenue, inputs.costs.rentTiers)
-  const annualRent = Math.max(tieredRent, inputs.costs.baseRent ?? 0) + (inputs.costs.additionalRent ?? 0)
+  const rentCalc = calculateFullRent(annualRevenue, inputs.costs.rentConfig)
+  const annualRent = rentCalc.effectiveRentAnnual
   const effectiveRentRate = annualRevenue > 0 ? (annualRent / annualRevenue) * 100 : 0
 
   const toggleSection = (section: string) => {
@@ -557,9 +557,9 @@ export default function ReportsPage() {
           </div>
         </ReportSection>
 
-        {/* Tiered Rent Structure */}
+        {/* Rent Structure */}
         <ReportSection
-          title="Tiered Rent Structure"
+          title="Rent Structure"
           icon={<Building2 className="w-5 h-5" />}
           isExpanded={expandedSections.rent}
           onToggle={() => toggleSection('rent')}
@@ -571,20 +571,22 @@ export default function ReportsPage() {
               <div className="font-semibold text-gray-900">{formatCurrency(annualRevenue)}</div>
             </div>
             <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500">Base Rent (Annual)</div>
-              <div className="font-semibold text-gray-900">{formatCurrency(inputs.costs.baseRent)}</div>
+              <div className="text-xs text-gray-500">Lease Year</div>
+              <div className="font-semibold text-gray-900">Year {inputs.costs.rentConfig.currentLeaseYear}</div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500">Additional Rent (Annual)</div>
-              <div className="font-semibold text-gray-900">{formatCurrency(inputs.costs.additionalRent ?? 0)}</div>
+            <div className={`rounded-lg p-3 ${rentCalc.rentType === 'fixed' ? 'bg-green-50' : 'bg-gray-50'}`}>
+              <div className="text-xs text-gray-500">Fixed Rent (Escalated)</div>
+              <div className="font-semibold text-gray-900">{formatCurrency(rentCalc.fixedRentTotal)}</div>
+              {rentCalc.rentType === 'fixed' && <div className="text-xs text-green-600 font-medium">✓ APPLIES</div>}
+            </div>
+            <div className={`rounded-lg p-3 ${rentCalc.rentType === 'percentage' ? 'bg-green-50' : 'bg-gray-50'}`}>
+              <div className="text-xs text-gray-500">Percentage Rent</div>
+              <div className="font-semibold text-gray-900">{formatCurrency(rentCalc.percentageRentTotal)}</div>
+              {rentCalc.rentType === 'percentage' && <div className="text-xs text-green-600 font-medium">✓ APPLIES</div>}
             </div>
             <div className="bg-amber-50 rounded-lg p-3">
-              <div className="text-xs text-amber-600">Total Annual Rent</div>
+              <div className="text-xs text-amber-600">Effective Annual Rent</div>
               <div className="font-semibold text-amber-900">{formatCurrency(annualRent)}</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-xs text-gray-500">Weekly Rent</div>
-              <div className="font-semibold text-gray-900">{formatCurrency(calculations.costs.breakdown.rent)}</div>
             </div>
             <div className="bg-gray-50 rounded-lg p-3">
               <div className="text-xs text-gray-500">Effective Rate</div>
@@ -592,6 +594,43 @@ export default function ReportsPage() {
             </div>
           </div>
 
+          {/* Fixed Rent Table */}
+          <h4 className="font-semibold text-gray-700 text-sm mb-2">Fixed Rent (Base + Additional with CPI)</h4>
+          <div className="overflow-x-auto mb-6">
+            <table className="data-table w-full">
+              <thead>
+                <tr>
+                  <th className="text-left">Component</th>
+                  <th className="text-right">Base Amount</th>
+                  <th className="text-right">CPI Rate</th>
+                  <th className="text-right">Escalated (Year {inputs.costs.rentConfig.currentLeaseYear})</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Base Rent</td>
+                  <td className="text-right">{formatCurrency(inputs.costs.rentConfig.baseRentAnnual)}</td>
+                  <td className="text-right">{inputs.costs.rentConfig.cpiRate}% (from Year {inputs.costs.rentConfig.cpiStartYear})</td>
+                  <td className="text-right font-medium">{formatCurrency(rentCalc.baseRentEscalated)}</td>
+                </tr>
+                <tr>
+                  <td>Additional Rent</td>
+                  <td className="text-right">{formatCurrency(inputs.costs.rentConfig.additionalRentAnnual)}</td>
+                  <td className="text-right">{inputs.costs.rentConfig.cpiRate}% (from Year {inputs.costs.rentConfig.cpiStartYear})</td>
+                  <td className="text-right font-medium">{formatCurrency(rentCalc.additionalRentEscalated)}</td>
+                </tr>
+                <tr className={`font-semibold ${rentCalc.rentType === 'fixed' ? 'bg-green-50' : ''}`}>
+                  <td>Total Fixed Rent</td>
+                  <td className="text-right">{formatCurrency(inputs.costs.rentConfig.baseRentAnnual + inputs.costs.rentConfig.additionalRentAnnual)}</td>
+                  <td className="text-right"></td>
+                  <td className="text-right">{formatCurrency(rentCalc.fixedRentTotal)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Percentage Rent Tiers */}
+          <h4 className="font-semibold text-gray-700 text-sm mb-2">Percentage Rent Tiers</h4>
           <div className="overflow-x-auto">
             <table className="data-table w-full">
               <thead>
@@ -604,8 +643,8 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {inputs.costs.rentTiers.map((tier, index) => {
-                  const isActive = annualRevenue >= tier.minRevenue && 
+                {inputs.costs.rentConfig.percentageRentTiers.map((tier, index) => {
+                  const isActive = annualRevenue >= tier.minRevenue &&
                     (tier.maxRevenue === null || annualRevenue <= tier.maxRevenue)
                   return (
                     <tr key={index} className={isActive ? 'bg-amber-50' : ''}>
@@ -619,11 +658,19 @@ export default function ReportsPage() {
                     </tr>
                   )
                 })}
+                <tr className={`font-semibold ${rentCalc.rentType === 'percentage' ? 'bg-green-50' : ''}`}>
+                  <td>Total Percentage Rent</td>
+                  <td className="text-right" colSpan={2}></td>
+                  <td className="text-right">{formatCurrency(rentCalc.percentageRentTotal)}</td>
+                  <td className="text-center">
+                    {rentCalc.rentType === 'percentage' && <span className="badge badge-success">APPLIES</span>}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
           <p className="text-xs text-gray-500 mt-3 italic">
-            Note: Each tier&apos;s percentage applies only to revenue within that tier&apos;s range (progressive calculation).
+            Effective Rent = Greater of (Fixed Rent) vs (Percentage Rent). Each tier&apos;s percentage applies only to revenue within that range.
           </p>
         </ReportSection>
 
@@ -672,8 +719,11 @@ export default function ReportsPage() {
                 <DollarSign className="w-4 h-4 text-red-600" /> Costs
               </h4>
               <div className="space-y-1.5 text-sm">
-                <ConfigRow label="Base Rent" value={`${formatCurrency(inputs.costs.baseRent)}/yr`} />
-                <ConfigRow label="Additional Rent" value={`${formatCurrency(inputs.costs.additionalRent ?? 0)}/yr`} />
+                <ConfigRow label="Base Rent" value={`${formatCurrency(inputs.costs.rentConfig.baseRentAnnual)}/yr`} />
+                <ConfigRow label="Additional Rent" value={`${formatCurrency(inputs.costs.rentConfig.additionalRentAnnual)}/yr`} />
+                <ConfigRow label="CPI Rate" value={`${inputs.costs.rentConfig.cpiRate}%`} />
+                <ConfigRow label="CPI Start Year" value={`Year ${inputs.costs.rentConfig.cpiStartYear}`} />
+                <ConfigRow label="Lease Year" value={`Year ${inputs.costs.rentConfig.currentLeaseYear}`} />
                 <ConfigRow label="Mgmt Salary" value={`${formatCurrency(inputs.costs.annualManagementSalary)}/yr`} />
                 <ConfigRow label="Weekly Overhead" value={`${formatCurrency(inputs.costs.weeklyOverhead)}/wk`} />
                 <ConfigRow label="Back Bar Cost" value={`${formatCurrency(inputs.costs.backBarCostPerTreatment)}/tx`} />

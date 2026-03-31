@@ -14,6 +14,7 @@ const mergeWithDefaults = (imported: any): SpaInputs => {
     costs: {
       ...defaults.costs,
       ...imported.costs,
+      rentConfig: { ...defaults.costs.rentConfig, ...(imported.costs?.rentConfig || {}) },
       attendants: { ...defaults.costs.attendants, ...(imported.costs?.attendants || {}) },
       receptionists: { ...defaults.costs.receptionists, ...(imported.costs?.receptionists || {}) },
       supervisors: { ...defaults.costs.supervisors, ...(imported.costs?.supervisors || {}) },
@@ -52,18 +53,22 @@ export const getDefaultInputs = (): SpaInputs => ({
     revenuePercentage: 12 // 12% of treatment + thermal revenue
   },
   costs: {
-    // Fixed Costs - Base Rent (minimum annual rent)
-    baseRent: 275000, // $275,000 annual minimum rent
-    additionalRent: 0, // Additional annual rent (utilities, ops costs, etc.)
-    // Tiered Rent based on annual revenue
-    rentTiers: [
-      { minRevenue: 0, maxRevenue: 1800000, percentage: 5 },
-      { minRevenue: 1800000, maxRevenue: 2500000, percentage: 6 },
-      { minRevenue: 2500000, maxRevenue: 3000000, percentage: 7 },
-      { minRevenue: 3000000, maxRevenue: 4500000, percentage: 8 },
-      { minRevenue: 4500000, maxRevenue: 6000000, percentage: 9 },
-      { minRevenue: 6000000, maxRevenue: null, percentage: 10 }
-    ],
+    // Rent Configuration with CPI escalation and "greater of" logic
+    rentConfig: {
+      baseRentAnnual: 250000,       // $250,000 annual base rent
+      additionalRentAnnual: 20000,  // $20,000 annual additional rent (utilities, CAM, etc.)
+      cpiRate: 2,                   // 2% annual CPI escalation
+      cpiStartYear: 4,             // CPI escalation begins in Year 4
+      currentLeaseYear: 1,         // Starting at Year 1
+      percentageRentTiers: [
+        { minRevenue: 0, maxRevenue: 4000000, percentage: 0 },
+        { minRevenue: 4000000, maxRevenue: 4500000, percentage: 8 },
+        { minRevenue: 4500000, maxRevenue: 5000000, percentage: 9 },
+        { minRevenue: 5000000, maxRevenue: 5500000, percentage: 10 },
+        { minRevenue: 5500000, maxRevenue: 6000000, percentage: 11 },
+        { minRevenue: 6000000, maxRevenue: 10000000, percentage: 12 }
+      ],
+    },
     annualManagementSalary: 170000, // $170,000 annual
     weeklyOverhead: 8000, // $8,000 weekly for utilities, POS, internet, phone, music
     

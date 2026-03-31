@@ -43,16 +43,20 @@ export default function HelpPage() {
       answer: 'Thermal capacity = floor(maxCapacity x (operatingHours / sessionDuration)). This represents the total number of guest sessions possible in a day, considering how many guests can be accommodated simultaneously and how many sessions fit in the operating hours.'
     },
     {
-      question: 'What is tiered rent and how is it calculated?',
-      answer: 'Tiered rent uses a progressive calculation similar to income tax brackets. Each tier applies its percentage only to the revenue that falls within that tier range. For example, if Tier 1 is 5% on revenue up to $1.8M and Tier 2 is 6% on revenue from $1.8M to $2.5M, then $2M in revenue would pay 5% on the first $1.8M plus 6% on the remaining $200K. The total rent is the greater of the calculated tiered rent or the base rent, plus any additional rent.'
+      question: 'What is the "Greater Of" rent structure?',
+      answer: 'The rent is determined by: Effective Rent = MAX(Fixed Rent, Percentage Rent). Fixed Rent = Base Rent + Additional Rent (both escalated by CPI). Percentage Rent is calculated using progressive tiers based on annual revenue. Whichever side is higher becomes your effective rent for that lease year.'
     },
     {
-      question: 'What is the "greater of" rent logic?',
-      answer: 'The rent formula is: Total Rent = MAX(Tiered Rent, Base Rent) + Additional Rent. The base rent is a minimum annual floor — if the tiered rent calculation comes out lower, the base rent applies instead. Additional Rent is always added on top and represents fixed charges like utilities, CAM fees, or operational costs that are separate from the revenue-based rent.'
+      question: 'How does CPI escalation work?',
+      answer: 'Both Base Rent and Additional Rent are subject to CPI (Consumer Price Index) compound escalation. By default, the 2% CPI escalation begins in Year 4 of the lease. The formula is: Escalated Amount = Base Amount × (1 + CPI Rate)^(years of escalation). For example, $250,000 base rent with 2% CPI after 3 years of escalation = $250,000 × 1.02³ = $265,302.'
+    },
+    {
+      question: 'What is Percentage Rent and how are the tiers calculated?',
+      answer: 'Percentage Rent uses progressive tiers similar to income tax brackets. Each tier\'s rate applies only to revenue within that bracket. For example, 0% on revenue up to $4M, 8% on $4M-$4.5M, 9% on $4.5M-$5M, etc. Only the portion of revenue in each bracket is multiplied by that bracket\'s rate. The total percentage rent is the sum across all tiers.'
     },
     {
       question: 'What is Additional Rent?',
-      answer: 'Additional Rent is an annual dollar amount added on top of the base/tiered rent. It covers extra lease charges such as utilities, common area maintenance (CAM), property taxes, insurance, or other operational costs passed through by the landlord. Unlike base rent, it is not subject to the "greater of" comparison — it always applies.'
+      answer: 'Additional Rent is an annual amount covering utilities, common area maintenance (CAM), property taxes, insurance, or other operational costs. It is combined with Base Rent to form the Fixed Rent component. Both are subject to CPI escalation starting in the configured lease year.'
     },
     {
       question: 'Why do I see annual equivalents on the pages?',
@@ -187,10 +191,12 @@ export default function HelpPage() {
             <div className="border border-gray-200 rounded-lg p-4">
              <h4 className="font-semibold text-gray-900 mb-2">Fixed Costs</h4>
              <ul className="text-sm text-gray-600 space-y-1.5">
-               <li><strong>Base Rent:</strong> Minimum annual rent floor, regardless of revenue</li>
-               <li><strong>Tiered Rent:</strong> Progressive rent based on annual revenue brackets (add/remove tiers as needed)</li>
-               <li><strong>Additional Rent:</strong> Annual charges added on top of base/tiered rent (utilities, CAM, ops costs, etc.)</li>
-               <li><strong>Rent Formula:</strong> Total Rent = MAX(Tiered Rent, Base Rent) + Additional Rent</li>
+               <li><strong>Lease Year:</strong> Current year of the lease (1-25), controls CPI escalation</li>
+               <li><strong>Base Rent:</strong> Annual base rent before CPI escalation ($250,000 default)</li>
+               <li><strong>Additional Rent:</strong> Annual charges for utilities, CAM, etc. ($20,000 default)</li>
+               <li><strong>CPI Escalation:</strong> 2% compound annual increase starting Year 4</li>
+               <li><strong>Percentage Rent:</strong> Progressive tiers based on annual revenue</li>
+               <li><strong>Rent Formula:</strong> Effective Rent = Greater of (Fixed Rent) vs (Percentage Rent)</li>
                <li><strong>Management Salary:</strong> Annual salary divided by 52 weeks</li>
                <li><strong>Overhead:</strong> Weekly fixed overhead costs (insurance, POS, etc.)</li>
              </ul>
@@ -280,7 +286,7 @@ export default function HelpPage() {
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>Executive P&amp;L summary</li>
                 <li>Detailed cost breakdown</li>
-                <li>Tiered rent structure</li>
+                <li>Rent structure (fixed vs percentage)</li>
                 <li>Daily financial breakdown</li>
                 <li>Complete model configuration</li>
                 <li>Utilization and pricing</li>
@@ -321,9 +327,9 @@ export default function HelpPage() {
               example="81 x 0.80 x (0.50 x $160 + 0.50 x $160) = $10,368"
             />
             <FormulaCard
-              title="Total Rent"
-              formula="MAX(tieredRent, baseRent) + additionalRent"
-              example="MAX($150K tiered, $275K base) + $50K additional = $325K/yr"
+              title="Effective Rent"
+              formula="MAX(fixedRent, percentageRent) where fixedRent = escalatedBase + escalatedAdditional"
+              example="MAX($270K fixed, $200K percentage) = $270K/yr"
             />
             <FormulaCard
               title="Tiered Rent (Progressive)"

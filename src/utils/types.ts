@@ -39,12 +39,30 @@ export interface RentTier {
   percentage: number // rent percentage for this tier
 }
 
+// Rent Configuration (Greater-of structure with CPI escalation)
+export interface RentConfig {
+  baseRentAnnual: number          // base rent per year (e.g. $250,000)
+  additionalRentAnnual: number    // additional rent per year for utilities, CAM, etc. (e.g. $20,000)
+  cpiRate: number                 // annual CPI escalation percentage (e.g. 2%)
+  cpiStartYear: number            // lease year when CPI escalation begins (e.g. 4)
+  currentLeaseYear: number        // current year of the lease (1-25)
+  percentageRentTiers: RentTier[] // percentage rent tiers based on annual revenue
+}
+
+// Result of rent calculation showing both fixed and percentage components
+export interface RentCalculation {
+  baseRentEscalated: number       // base rent after CPI escalation
+  additionalRentEscalated: number // additional rent after CPI escalation
+  fixedRentTotal: number          // baseRentEscalated + additionalRentEscalated
+  percentageRentTotal: number     // total from percentage rent tiers
+  effectiveRentAnnual: number     // max(fixedRentTotal, percentageRentTotal)
+  rentType: 'fixed' | 'percentage' // which side of the "greater of" won
+}
+
 // Cost Types
 export interface CostInputs {
-  // Fixed Costs
-  baseRent: number // minimum annual rent regardless of revenue
-  additionalRent: number // additional annual rent (utilities, ops costs, etc.)
-  rentTiers: RentTier[] // tiered rent percentages based on annual revenue
+  // Fixed Costs - Rent Configuration
+  rentConfig: RentConfig          // full rent structure with CPI escalation
   annualManagementSalary: number // annual salary
   weeklyOverhead: number // weekly overhead costs
   

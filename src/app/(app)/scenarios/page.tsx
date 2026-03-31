@@ -242,7 +242,7 @@ export default function ScenariosPage() {
                   </div>
                   <div className="bg-amber-50 rounded-lg p-3">
                     <p className="text-xs text-amber-500">Rent Tiers</p>
-                    <p className="font-bold text-amber-700">{selectedScenario.inputs.costs.rentTiers.length}</p>
+                    <p className="font-bold text-amber-700">{selectedScenario.inputs.costs.rentConfig.percentageRentTiers.length}</p>
                   </div>
                 </div>
               </div>

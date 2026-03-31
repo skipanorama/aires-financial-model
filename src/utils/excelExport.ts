@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx'
 import { FinancialCalculations, SpaInputs } from './types'
 import { DAYS_OF_WEEK } from './localStorage'
-import { calculateTieredRent } from './calculations'
+import { calculateFullRent } from './calculations'
 
 export const exportRevenueToExcel = (calculations: FinancialCalculations, inputs: SpaInputs) => {
   // Create a new workbook
@@ -202,9 +202,10 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
   const annualRevenue = calculations.revenue.totals.total * 52
   const annualCosts = calculations.costs.totals.total * 52
   const annualProfit = calculations.profit.weekly.profit * 52
-  const tieredRent = calculateTieredRent(annualRevenue, inputs.costs.rentTiers)
-  const annualRent = Math.max(tieredRent, inputs.costs.baseRent ?? 0) + (inputs.costs.additionalRent ?? 0)
-  const effectiveRentRate = (annualRent / annualRevenue) * 100
+  const rentCalc = calculateFullRent(annualRevenue, inputs.costs.rentConfig)
+  const annualRent = rentCalc.effectiveRentAnnual
+  const effectiveRentRate = annualRevenue > 0 ? (annualRent / annualRevenue) * 100 : 0
+  const rc = inputs.costs.rentConfig
 
   // Sheet 1: Executive Summary
   const summaryData = [
@@ -280,29 +281,34 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
   costBreakdownWS['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 18 }, { wch: 15 }]
   XLSX.utils.book_append_sheet(wb, costBreakdownWS, 'Cost Breakdown')
 
-  // Sheet 3: Tiered Rent Structure
+  // Sheet 3: Rent Structure
   const rentData = [
     ['═══════════════════════════════════════════════════════════════════════════'],
-    ['                        TIERED RENT STRUCTURE                               '],
+    ['                          RENT STRUCTURE                                    '],
     ['═══════════════════════════════════════════════════════════════════════════'],
     [''],
     ['───────────────────────────────────────────────────────────────────────────'],
     ['                         RENT SUMMARY                                       '],
     ['───────────────────────────────────────────────────────────────────────────'],
     ['Annual Revenue', annualRevenue],
-    ['Base Rent (Annual Min)', inputs.costs.baseRent],
-    ['Additional Rent (Annual)', inputs.costs.additionalRent ?? 0],
-    ['Tiered Rent (Calculated)', tieredRent],
-    ['Annual Rent (Total)', annualRent],
-    ['Weekly Rent', calculations.costs.breakdown.rent],
-    ['Effective Rent Rate', `${effectiveRentRate.toFixed(2)}%`],
+    ['Current Lease Year', `Year ${rc.currentLeaseYear}`],
+    ['CPI Escalation Rate', `${rc.cpiRate}%`],
+    ['CPI Start Year', `Year ${rc.cpiStartYear}`],
     [''],
     ['───────────────────────────────────────────────────────────────────────────'],
-    ['                         RENT TIERS                                         '],
+    ['                    FIXED RENT (with CPI Escalation)                        '],
+    ['───────────────────────────────────────────────────────────────────────────'],
+    ['Component', 'Base Amount', 'Escalated Amount'],
+    ['Base Rent', rc.baseRentAnnual, rentCalc.baseRentEscalated],
+    ['Additional Rent', rc.additionalRentAnnual, rentCalc.additionalRentEscalated],
+    ['Total Fixed Rent', rc.baseRentAnnual + rc.additionalRentAnnual, rentCalc.fixedRentTotal],
+    [''],
+    ['───────────────────────────────────────────────────────────────────────────'],
+    ['                       PERCENTAGE RENT TIERS                                '],
     ['───────────────────────────────────────────────────────────────────────────'],
     ['Tier', 'Min Revenue', 'Max Revenue', 'Rate', 'Status'],
-    ...inputs.costs.rentTiers.map((tier, index) => {
-      const isActive = annualRevenue >= tier.minRevenue && 
+    ...rc.percentageRentTiers.map((tier, index) => {
+      const isActive = annualRevenue >= tier.minRevenue &&
         (tier.maxRevenue === null || annualRevenue <= tier.maxRevenue)
       return [
         `Tier ${index + 1}`,
@@ -312,13 +318,24 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
         isActive ? 'ACTIVE' : ''
       ]
     }),
+    ['Total Percentage Rent', '', '', rentCalc.percentageRentTotal],
     [''],
-    ['Note: Each tier\'s percentage applies only to revenue within that tier\'s range (progressive)'],
+    ['───────────────────────────────────────────────────────────────────────────'],
+    ['                       RENT DETERMINATION                                   '],
+    ['───────────────────────────────────────────────────────────────────────────'],
+    ['Fixed Rent (Escalated)', rentCalc.fixedRentTotal, rentCalc.rentType === 'fixed' ? 'APPLIES' : ''],
+    ['Percentage Rent', rentCalc.percentageRentTotal, rentCalc.rentType === 'percentage' ? 'APPLIES' : ''],
+    ['Effective Annual Rent', annualRent],
+    ['Weekly Rent', calculations.costs.breakdown.rent],
+    ['Effective Rent Rate', `${effectiveRentRate.toFixed(2)}%`],
+    [''],
+    ['Note: Effective Rent = Greater of (Fixed Rent) vs (Percentage Rent)'],
+    ['Each tier\'s percentage applies only to revenue within that tier\'s range (progressive)'],
   ]
 
   const rentWS = XLSX.utils.aoa_to_sheet(rentData)
-  rentWS['!cols'] = [{ wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 10 }, { wch: 12 }]
-  XLSX.utils.book_append_sheet(wb, rentWS, 'Tiered Rent')
+  rentWS['!cols'] = [{ wch: 25 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }]
+  XLSX.utils.book_append_sheet(wb, rentWS, 'Rent Structure')
 
   // Sheet 4: Daily Financial Breakdown
   const dailyFinancialData = [
@@ -389,8 +406,10 @@ export const exportFinancialToExcel = (calculations: FinancialCalculations, inpu
     ['───────────────────────────────────────────────────────────────────────────'],
     [''],
     ['Fixed Costs:'],
-    ['  Base Rent', inputs.costs.baseRent, '/year (minimum)'],
-    ['  Additional Rent', inputs.costs.additionalRent ?? 0, '/year (utilities, ops, etc.)'],
+    ['  Base Rent', rc.baseRentAnnual, '/year (before CPI)'],
+    ['  Additional Rent', rc.additionalRentAnnual, '/year (before CPI)'],
+    ['  CPI Rate', `${rc.cpiRate}%`, `starting Year ${rc.cpiStartYear}`],
+    ['  Current Lease Year', rc.currentLeaseYear],
     ['  Management Salary', inputs.costs.annualManagementSalary, '/year'],
     ['  Weekly Overhead', inputs.costs.weeklyOverhead, '/week'],
     [''],

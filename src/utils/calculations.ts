@@ -6,7 +6,9 @@ import {
   DailyRevenue,
   DailyCosts,
   DailyProfit,
-  RentTier
+  RentTier,
+  RentConfig,
+  RentCalculation
 } from './types'
 
 // Calculate daily treatment capacity based on spa configuration
@@ -150,6 +152,47 @@ export const calculateTieredRent = (annualRevenue: number, rentTiers: RentTier[]
   return totalRent
 }
 
+// Calculate CPI-escalated amount based on lease year
+// Escalation applies compound growth starting from cpiStartYear
+export const calculateEscalatedAmount = (
+  baseAmount: number,
+  currentYear: number,
+  cpiRate: number,
+  cpiStartYear: number
+): number => {
+  if (currentYear < cpiStartYear) return baseAmount
+  const escalationYears = currentYear - cpiStartYear + 1
+  return baseAmount * Math.pow(1 + cpiRate / 100, escalationYears)
+}
+
+// Calculate full rent using "greater of" logic with CPI escalation
+// Effective Rent = max(Fixed Rent, Percentage Rent)
+// Fixed Rent = Escalated Base Rent + Escalated Additional Rent
+export const calculateFullRent = (annualRevenue: number, rentConfig: RentConfig): RentCalculation => {
+  const { baseRentAnnual, additionalRentAnnual, cpiRate, cpiStartYear, currentLeaseYear, percentageRentTiers } = rentConfig
+
+  // Calculate CPI-escalated base and additional rent
+  const baseRentEscalated = calculateEscalatedAmount(baseRentAnnual, currentLeaseYear, cpiRate, cpiStartYear)
+  const additionalRentEscalated = calculateEscalatedAmount(additionalRentAnnual, currentLeaseYear, cpiRate, cpiStartYear)
+  const fixedRentTotal = baseRentEscalated + additionalRentEscalated
+
+  // Calculate percentage rent from progressive tiers
+  const percentageRentTotal = calculateTieredRent(annualRevenue, percentageRentTiers)
+
+  // Effective rent is the greater of fixed vs percentage
+  const effectiveRentAnnual = Math.max(fixedRentTotal, percentageRentTotal)
+  const rentType: 'fixed' | 'percentage' = fixedRentTotal >= percentageRentTotal ? 'fixed' : 'percentage'
+
+  return {
+    baseRentEscalated,
+    additionalRentEscalated,
+    fixedRentTotal,
+    percentageRentTotal,
+    effectiveRentAnnual,
+    rentType
+  }
+}
+
 // Calculate weekly revenue breakdown
 export const calculateWeeklyRevenue = (inputs: SpaInputs): WeeklyRevenue => {
   const dailyTreatmentCapacity = calculateTreatmentCapacity(inputs)
@@ -208,13 +251,10 @@ export const calculateDailyCosts = (
   const { costs } = inputs
   
   // Fixed costs (distributed daily)
-  // Calculate annual revenue from weekly revenue for tiered rent calculation
+  // Calculate annual revenue from weekly revenue for rent calculation
   const annualRevenue = totalWeeklyRevenue * 52
-  const tieredRent = calculateTieredRent(annualRevenue, costs.rentTiers)
-  // Base rent is the minimum annual rent; actual rent is the greater of base rent or tiered rent
-  // Additional rent is added on top (utilities, ops costs, etc.)
-  const annualRent = Math.max(tieredRent, costs.baseRent ?? 0) + (costs.additionalRent ?? 0)
-  const dailyRent = annualRent / 52 / 7 // Divide annual rent by weeks and days
+  const rentCalc = calculateFullRent(annualRevenue, costs.rentConfig)
+  const dailyRent = rentCalc.effectiveRentAnnual / 52 / 7 // Divide annual rent by weeks and days
   const dailyManagement = (costs.annualManagementSalary / 52) / 7
   const dailyOverhead = costs.weeklyOverhead / 7
   
